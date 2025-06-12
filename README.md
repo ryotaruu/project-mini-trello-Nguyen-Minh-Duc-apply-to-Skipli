@@ -5,6 +5,13 @@ A Mini Trello clone built with React, TypeScript, and Vite, implementing core Tr
 
 ## Key Features
 
+### Board and Card Management
+- **Dashboard Board View**: Display all boards in a dashboard layout for easy navigation and management.
+- **Add Board**: Create new boards directly from the dashboard. Each board is saved and persisted in Firebase Firestore.
+- **Show Board & Card View**: Click on a board to view its details and cards. The board detail page displays all cards (tasks) organized in columns.
+- **Card Layout**: The card view features a Kanban-style layout with four columns: New, In Progress, Completed, and Cancelled. Cards can be dragged and dropped between columns for easy workflow management.
+- **Modern UI**: The board and card views are styled for clarity, with a horizontal column layout, white text, and a light gray background for improved readability.
+
 ### Authentication System
 1. **Gmail Authentication**
    - Implemented a secure passwordless login system

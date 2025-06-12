@@ -73,17 +73,43 @@ const handleSignIn: RequestHandler = async (req: Request, res: Response): Promis
         'displayName': email,
         'avatar': null,
         'photoURL': null,
-        'provider': 'email verify code',
-        'uid': uid
+        'provider': 'email_verify_code',
+        'uid': uid,
+        'codeVerify': code,
+        'isAdmin': false
     }
 
     verificationMap.delete(email)
-    
 
     res.status(200).json(userData)
 }
 
 router.post('/signin', handleSignIn)
+
+const adminSeeder: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+    const uid = crypto.createHash('sha256').update('admin@minitrello.com').digest('hex').slice(0, 28)
+
+    const token = jwt.sign({ email: 'admin@minitrello.com' }, process.env.JWT_SECRET as string, {
+        expiresIn: '1h'
+    })
+
+    const adminData = {
+        'accessToken': token,
+        uid: uid,
+        email: 'admin@minitrello.com',
+        displayName: 'Admin',
+        photoURL: null,
+        createdAt: new Date().toISOString(),
+        lastLoginAt: new Date().toISOString(),
+        provider: 'email_verify_code',
+        codeVerify: 'admin123',
+        isAdmin: true
+    }
+
+    res.status(200).json(adminData)
+}
+
+router.get('/admin-seeder', adminSeeder)
 
 export { verificationMap }
 export default router

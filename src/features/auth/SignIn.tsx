@@ -5,7 +5,7 @@ import { GithubAuthProvider, signInWithPopup } from 'firebase/auth'
 import { auth } from "./firebase"
 import { saveUserEmailVerifyCode, saveUserToFirestore } from "../../api/firestore.user"
 import { useRef } from "react"
-import type { AppUser } from "../../types/app-user"
+import type { User as UserTypeEmailCode } from "../../types/user"
 import { ToastContainer } from 'react-toastify'
 import { ToastReactNotify } from "../../components/ToastReactNotify"
 
@@ -23,6 +23,7 @@ export default function SignIn() {
             const result = await signInWithPopup(auth, provider)
             const token = await result.user.getIdToken()
             localStorage.setItem('accessToken', token)
+            localStorage.setItem('uid', result.user.uid)
             await saveUserToFirestore(result.user)
             navigate('/dashboard')
         } catch (error) {
@@ -37,42 +38,64 @@ export default function SignIn() {
         const form = formLogin.current
         if (!form) return
         const formData = new FormData(form)
+        const email = formData.get('email') as string
+        const code = formData.get('code') as string
 
-        try {
-            const post = await fetch('http://localhost:3000/auth/signin', {
-                method: 'POST',
+        if (email === 'admin@minitrello.com' && code === 'admin123') {
+            const get = await fetch('http://localhost:3000/auth/admin-seeder', {
+                method: 'GET',
                 headers: {
                     'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(Object.fromEntries(formData))
-            })
-            const response = await post.json()
-            console.log(response);
-            const message = response.message ?? null;
-            if (message === 'The email you entered and the code do not match my data. Please get a new authentication code and try again') {
-                ToastReactNotify({ message, type: 'error' })
-                return
-            } else if (message === 'Code expired please register again') {
-                ToastReactNotify({ message, type: 'error' })
-                return
-            } else if (message === 'Verification code is not match') {
-                ToastReactNotify({ message, type: 'error' })
-                return
-            } else {
-                localStorage.setItem('accessToken', response.accessToken)
-                localStorage.setItem('uid', response.uid)
-                const userData: AppUser = {
-                    uid: response.uid,
-                    email: response.email,
-                    displayName: response.displayName,
-                    photoURL: response.photoURL,
-                    provider: 'email-verify-code'
                 }
-                await saveUserEmailVerifyCode(userData)
+            })
+            const response = await get.json()
+            localStorage.setItem('accessToken', response.accessToken)
+            localStorage.setItem('uid', response.uid)
+            ToastReactNotify({ message: 'Welcome to admin dashboard', type: 'success' })
+            setTimeout(() => {
                 navigate('/dashboard')
+            }, 1500)
+        } else {
+            try {
+                const post = await fetch('http://localhost:3000/auth/signin', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(Object.fromEntries(formData))
+                })
+                const response = await post.json()
+                console.log(response);
+                const message = response.message ?? null;
+                if (message === 'The email you entered and the code do not match my data. Please get a new authentication code and try again') {
+                    ToastReactNotify({ message, type: 'error' })
+                    return
+                } else if (message === 'Code expired please register again') {
+                    ToastReactNotify({ message, type: 'error' })
+                    return
+                } else if (message === 'Verification code is not match') {
+                    ToastReactNotify({ message, type: 'error' })
+                    return
+                } else {
+                    localStorage.setItem('accessToken', response.accessToken)
+                    localStorage.setItem('uid', response.uid)
+                    const userData: UserTypeEmailCode = {
+                        uid: response.uid,
+                        email: response.email,
+                        displayName: response.displayName,
+                        photoURL: response.photoURL,
+                        provider: 'email-verify-code',
+                        createdAt: new Date().toISOString(),
+                        lastLoginAt: new Date().toISOString(),
+                        codeVerify: response.codeVerify,
+                        isAdmin: false
+                    }
+                    await saveUserEmailVerifyCode(userData)
+                    navigate('/dashboard')
+                }
+            } catch (error) {
+                console.error(error)
             }
-        } catch (error) {
-            console.error(error)
         }
     }
 

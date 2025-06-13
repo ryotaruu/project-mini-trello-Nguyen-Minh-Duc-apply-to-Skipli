@@ -27,7 +27,7 @@ A Mini Trello clone built with React, TypeScript, and Vite, implementing core Tr
 
 ### Technical Implementation
 - **Frontend Development**
-  - Built with React 18 and TypeScript
+  - Built with React 19 and TypeScript
   - Implemented using Vite for optimal development experience
   - Responsive design for cross-platform compatibility
 

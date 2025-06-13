@@ -8,26 +8,20 @@ import { useMemo } from 'react';
 import { FaPlusCircle } from 'react-icons/fa';
 import { RiDeleteBinLine } from 'react-icons/ri';
 import useEditable from '../hooks/useEditable';
-import { type Column, kanbanActions } from '../store/kanbanSlice';
-import { useAppDispatch, useAppSelector } from '../util/reduxHooks';
-import KanbanTaskItem from './KanbanTaskItem';
+import { type Column } from '../store/kanbanSlice';
+import { useAppDispatch } from '../util/reduxHooks';
+import { KanbanTaskItem } from './KanbanTaskItem';
+import { useParams } from 'react-router-dom';
+import { useUser } from '../contexts/UserContext';
+import { addTaskToColumnById, deleteColumn } from '../store/kanbanSlice';
 
 type Props = {
-  column: Column;
+  id: string;
+  title: string;
+  tasks: Column['tasks'];
 };
 
-function KanbanColumn({ column }: Props) {
-  const dispatch = useAppDispatch();
-  const isLastColumn = useAppSelector(
-    (state) => state.kanban.columns.length === 1
-  );
-  const { handleBlur, handleKeyDown, isEditable, setIsEditable } =
-    useEditable();
-
-  const { tasks, id, title } = column;
-
-  const taskIds = useMemo(() => tasks.map((task) => task.id), [tasks]);
-
+export default function KanbanColumn({ id, title, tasks }: Props) {
   const {
     attributes,
     listeners,
@@ -39,82 +33,87 @@ function KanbanColumn({ column }: Props) {
     id,
     data: {
       type: 'column',
-      column,
+      column: { id, title, tasks },
     },
   });
 
   const style = {
+    transform: CSS.Transform.toString(transform),
     transition,
-    transform: CSS.Translate.toString(transform),
+  };
+
+  const taskIds = useMemo(
+    () => tasks.map((task) => task.id),
+    [tasks]
+  );
+
+  const dispatch = useAppDispatch();
+  const { boardUid } = useParams();
+  const { user } = useUser();
+
+  const { isEditable, setIsEditable, handleBlur, handleKeyDown, handleInputFocus } =
+    useEditable();
+
+  const createTaskHandler = () => {
+    const taskId = crypto.randomUUID();
+    const newTask: Column['tasks'][number] = {
+      id: taskId,
+      content: 'Task new - Please click to edit content',
+    };
+
+    if (boardUid && user?.uid) {
+      dispatch(addTaskToColumnById({ columnId: id, task: newTask, boardUid, userId: user.uid }));
+    } else {
+      dispatch(addTaskToColumnById({ columnId: id, task: newTask }));
+    }
   };
 
   const deleteColumnHandler = () => {
-    dispatch(kanbanActions.deleteColumn(column.id));
-  };
-
-  const createTaskHandler = () => {
-    dispatch(kanbanActions.addTaskToColumnById(column.id));
-  };
-
-  const handleInputChange = (event: React.FormEvent<HTMLInputElement>) => {
-    const newTitle = event.currentTarget.value;
-    dispatch(
-      kanbanActions.renameColumn({
-        columnId: id,
-        newTitle,
-      })
-    );
+    if (boardUid && user?.uid) {
+      dispatch(deleteColumn({ columnId: id, boardUid, userId: user.uid }));
+    } else {
+      dispatch(deleteColumn({ columnId: id }));
+    }
   };
 
   return (
     <div
-      className={`bg-gray-100 dark:bg-gray-800 z-10 w-72 min-w-72 h-[30rem] p-1 cursor-grab active:cursor-grabbing rounded-lg flex flex-col ${
-        isDragging ? 'opacity-50 z-0' : ''
+      className={`bg-gray-100 dark:bg-gray-800 w-80 rounded-lg p-4 flex flex-col ${
+        isDragging ? 'opacity-30' : ''
       }`}
-      ref={setNodeRef}
       style={style}
-      {...listeners}
+      ref={setNodeRef}
       {...attributes}
+      {...listeners}
     >
-      <div
-        onClick={() => setIsEditable(true)}
-        onBlur={handleBlur}
-        className="bg-gray-200 dark:bg-gray-700 p-2 flex items-center justify-between min-h-10 rounded-t-lg"
-      >
-        <div className="cursor-text">
-          {isEditable && (
-            <input
-              onChange={handleInputChange}
-              type="text"
-              className="font-bold text-md w-full h-[1.2rem] bg-transparent border-none outline-none text-white"
-              defaultValue={title}
-              autoFocus={true}
-              onKeyDown={handleKeyDown}
-            />
-          )}
-          {!isEditable && (
-            <span className="font-bold text-md text-white text-wrap break-words">
-              {title}
-            </span>
-          )}
-        </div>
-        {!isLastColumn && (
-          <button
-            className="text-lg text-gray-400 hover:text-gray-200 transition"
-            onClick={deleteColumnHandler}
-          >
-            <RiDeleteBinLine />
-          </button>
+      <div className="flex items-center justify-between mb-4">
+        {!isEditable && (
+          <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
+            {title}
+          </h3>
         )}
+        {isEditable && (
+          <input
+            type="text"
+            className="text-lg font-semibold text-gray-800 dark:text-white bg-transparent outline-none"
+            defaultValue={title}
+            onKeyDown={handleKeyDown}
+            onBlur={handleBlur}
+            onFocus={handleInputFocus}
+            autoFocus={true}
+          />
+        )}
+        <button
+          onClick={deleteColumnHandler}
+          className="p-2 text-lg text-transparent group-hover:text-gray-400 transition-all group/button"
+        >
+          <RiDeleteBinLine className="group-hover/button:text-gray-200 block transition-all" />
+        </button>
       </div>
       <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
-        {tasks && (
-          <div className="overflow-y-auto p-2 pr-3 flex flex-col gap-2">
-            {tasks.map((task) => (
-              <KanbanTaskItem key={task.id} task={task} parentId={column.id} />
-            ))}
-          </div>
-        )}
+        {tasks.map((task) => (
+          <KanbanTaskItem key={task.id} task={task} parentId={id} />
+        ))}
       </SortableContext>
       <div className="mt-auto">
         <button
@@ -128,5 +127,3 @@ function KanbanColumn({ column }: Props) {
     </div>
   );
 }
-
-export default KanbanColumn;

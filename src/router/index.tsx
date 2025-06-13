@@ -6,6 +6,8 @@ import SignIn from "../features/auth/SignIn"
 import AdminSeeder from "../seeders/admin-seeder"
 import { UserProvider } from "../contexts/UserContext"
 import CardList from "../pages/CardList"
+import UserList from '../pages/UserList'
+import { DashboardLayout } from '../layouts/DashboardLayout'
 
 export default function AppRouter() {
     const isAuthenticated = !!localStorage.getItem('accessToken')
@@ -17,10 +19,11 @@ export default function AppRouter() {
                     <Route path="/" element={<Navigate to={isAuthenticated ? '/dashboard' : '/sign-in'} />} />
                     <Route path="/sign-in" element={<SignIn />} />
                     <Route path="/sign-up" element={<SignUp />} />
-                    <Route path="/dashboard" element={<Dashboard />} />
                     <Route path="/alert-message-send-email" element={<AlertMessageSendEmail />} />
                     <Route path="/admin-seeder" element={<AdminSeeder />} />
-                    <Route path="/boards/:boardUid/cards" element={<CardList />} />
+                    <Route path="/dashboard" element={<DashboardLayout><Dashboard /></DashboardLayout>} />
+                    <Route path="/users" element={<DashboardLayout><UserList /></DashboardLayout>} />
+                    <Route path="/boards/:boardUid/cards" element={<DashboardLayout><CardList /></DashboardLayout>} />
                 </Routes>
             </UserProvider>
         </BrowserRouter>

@@ -43,6 +43,17 @@ A Mini Trello clone built with React, TypeScript, and Vite, implementing core Tr
   - OAuth 2.0 implementation
   - Protected API endpoints
 
+## Task Management Features
+
+- **Add/Edit/Delete Task**: You can create, update, and remove tasks (cards) within any board. Each task can be edited or deleted directly from the card view.
+- **Move Task Between Cards**: Tasks can be easily moved between columns (New, In Progress, Completed, Cancelled) using drag-and-drop, providing a smooth Kanban experience.
+
+## Admin User Management
+
+- **User List Menu (Admin Only)**: An additional menu is available for admin users to view the full list of registered users. This feature is accessible via the sidebar menu "List users" when logged in as an admin.
+- **Admin Account**: Admin credentials for testing are provided below (see the end of this README).
+- The user management page displays user avatars, names, emails, authentication providers, and admin status in a clear table format.
+
 ## Technical Stack
 - **Frontend**: React, TypeScript, Vite
 - **Authentication**: Firebase Authentication
@@ -79,3 +90,33 @@ Note: Both frontend and backend servers need to be running simultaneously for th
 - Enhanced email verification system
 - Integration of real-time collaboration features
 - Performance optimization for large-scale deployment
+
+## Admin Test Account
+
+You can use the following admin account to access admin features:
+
+- **Email:** admin@minitrello.com
+- **Password:** admin123
+
+## Screenshots
+
+### Sign In Page
+![Sign In Page](public/sign_in_page.png)
+
+### Sign Up - Get Code Page
+![Sign Up Get Code Page](public/sign_up_get_code_page.png)
+
+### Sign In with GitHub
+![Sign In with GitHub](public/sign_in_with_github.png)
+
+### Dashboard (with Admin Email)
+![Dashboard with Admin Email](public/dasboard_with_email_admin.png)
+
+### Board - Card and Task Management
+![Card and Task in Board](public/card_and_task_in_board.png)
+
+### User List (Admin View)
+![Users List with Manager Account](public/users_list_with_manager_account.png)
+
+### Backend: Send Code Verify Email (Node.js + Nodemailer)
+![Backend Send Code Verify Email](public/backend_send_code_verify_email_with_node_nodemail.png)

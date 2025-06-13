@@ -30,11 +30,10 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
                     const userData = await getUserFromFirestore(uid);
                     setUser(userData);
                 } else {
-                    navigate('/sign-in');
+                    setUser(null);
                 }
             } catch (error) {
                 console.error('Error fetching user:', error);
-                navigate('/sign-in');
             } finally {
                 setLoading(false);
             }

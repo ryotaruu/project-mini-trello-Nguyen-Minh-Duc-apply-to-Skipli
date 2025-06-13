@@ -1,96 +1,109 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { type SyntheticEvent } from 'react';
-import { RiDeleteBinLine } from 'react-icons/ri';
 import useEditable from '../hooks/useEditable';
-import { type Task, kanbanActions } from '../store/kanbanSlice';
-import { useAppDispatch } from '../util/reduxHooks';
+import { type KanbanTask, deleteTask, renameTask } from '../store/kanbanSlice';
+import { useDispatch } from 'react-redux';
+import { useParams } from 'react-router-dom';
+import { useUser } from '../contexts/UserContext';
+import { useState } from 'react';
+import { TaskEditForm } from './TaskEditForm';
 
-type Props = {
-    task: Task;
-    parentId?: string;
-};
+interface Props {
+    task: KanbanTask;
+    parentId: string;
+}
 
-function KanbanTaskItem({ task, parentId }: Props) {
-    const dispatch = useAppDispatch();
-    const { handleBlur, handleKeyDown, isEditable, setIsEditable } =
-        useEditable();
-    const {
-        attributes,
-        listeners,
-        setNodeRef,
-        transform,
-        transition,
-        isDragging,
-    } = useSortable({
+export function KanbanTaskItem({ task, parentId }: Props) {
+    const dispatch = useDispatch();
+    const { boardUid } = useParams();
+    const { user } = useUser();
+    const [localContent, setLocalContent] = useState(task.content);
+    const [showEditForm, setShowEditForm] = useState(false);
+    const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
         id: task.id,
         data: {
-            type: 'task-item',
+            type: 'task',
             task,
-            parentId,
-        },
+            parentId
+        }
     });
 
+    const { isEditable, setIsEditable, handleBlur, handleInputFocus } = useEditable();
+
     const style = {
+        transform: CSS.Transform.toString(transform),
         transition,
-        transform: CSS.Translate.toString(transform),
     };
 
-    const deleteTaskHandler = (event: SyntheticEvent) => {
-        event.stopPropagation();
-        dispatch(kanbanActions.deleteTaskById(task.id));
+    const deleteTaskHandler = () => {
+        if (boardUid && user?.uid) {
+            dispatch(deleteTask({ taskId: task.id, parentId, boardUid, userId: user.uid }));
+        } else {
+            dispatch(deleteTask({ taskId: task.id, parentId }));
+        }
     };
 
-    const handleInputChange = (event: React.FormEvent<HTMLTextAreaElement>) => {
-        const newContent = event.currentTarget.value;
-        dispatch(
-            kanbanActions.renameTask({
-                taskId: task.id,
-                newContent: newContent,
-            })
-        );
+    const handleTaskContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        setLocalContent(e.target.value);
     };
 
-    // Necessary to put the cursor at the end when focusing (otherwise it is at the beginning)
-    const handleInputFocus = (event: React.FocusEvent<HTMLTextAreaElement>) => {
-        const value = event.target.value;
-        event.target.value = '';
-        event.target.value = value;
+    const handleTaskBlur = () => {
+        handleBlur();
+        // Only update if content is not empty and we have the required IDs
+        if (localContent.trim() !== '' && parentId && boardUid && user?.uid) {
+            dispatch(renameTask({ 
+                taskId: task.id, 
+                newContent: localContent, 
+                boardUid, 
+                userId: user.uid 
+            }));
+        } else {
+            // Reset to original content if validation fails
+            setLocalContent(task.content);
+        }
+    };
+
+    const handleTaskClick = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        setShowEditForm(true);
     };
 
     return (
-        <div
-            className={`bg-white dark:bg-gray-700 min-h-20 z-30 rounded-lg p-2 flex items-center justify-between group border border-transparent hover:border-blue-500 ${
-                isDragging ? 'opacity-30' : ''
-            }`}
-            style={style}
-            ref={setNodeRef}
-            {...attributes}
-            {...listeners}
-            onClick={() => setIsEditable(true)}
-            onBlur={handleBlur}
-        >
-            {!isEditable && (
-                <p className="text-sm text-gray-800 dark:text-white self-start">{task.content}</p>
-            )}
-            {isEditable && (
-                <textarea
-                    className="w-full text-sm h-[3.9rem] outline-none bg-transparent resize-none text-gray-800 dark:text-white"
-                    defaultValue={task.content}
-                    onChange={handleInputChange}
-                    onKeyDown={handleKeyDown}
-                    onFocus={handleInputFocus}
-                    autoFocus={true}
+        <>
+            <div
+                ref={setNodeRef}
+                style={style}
+                {...attributes}
+                {...listeners}
+                className="bg-white p-2 mb-2 rounded shadow cursor-move"
+            >
+                {isEditable ? (
+                    <textarea
+                        value={localContent}
+                        onChange={handleTaskContentChange}
+                        onBlur={handleTaskBlur}
+                        onFocus={handleInputFocus}
+                        className="w-full p-1 border rounded"
+                        autoFocus
+                    />
+                ) : (
+                    <div className="flex justify-between items-center">
+                        <span onClick={handleTaskClick} className="flex-1 cursor-pointer">
+                            {task.content}
+                        </span>
+                        <button onClick={deleteTaskHandler} className="text-red-500 hover:text-red-700 ml-2">
+                            ×
+                        </button>
+                    </div>
+                )}
+            </div>
+            {showEditForm && (
+                <TaskEditForm
+                    task={task}
+                    parentId={parentId}
+                    onClose={() => setShowEditForm(false)}
                 />
             )}
-            <button
-                onClick={deleteTaskHandler}
-                className="p-2 text-lg text-transparent group-hover:text-gray-400 transition-all group/button"
-            >
-                <RiDeleteBinLine className="group-hover/button:text-gray-200 block transition-all" />
-            </button>
-        </div>
+        </>
     );
-}
-
-export default KanbanTaskItem; 
+} 
